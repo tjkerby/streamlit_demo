@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-# Keep dependencies minimal for students: use Streamlit's built-in charting
+import matplotlib.pyplot as plt
+# Keep dependencies minimal for students: show both Streamlit and Matplotlib examples
 
 st.set_page_config(page_title="BYU Football Explorer", layout="wide")
 
@@ -22,7 +23,8 @@ df = pd.read_csv(DATA_PATH)
 st.subheader("Data preview")
 st.dataframe(df.head(50))
 
-mode = st.sidebar.radio("Metric", ["Total yards", "Average per attempt"]) 
+# mode = st.sidebar.radio("Metric", ["Total yards", "Average per attempt"]) 
+mode = st.radio("Metric", ["Total yards", "Average per attempt"])
 
 plot_df = df.copy()
 plot_df['totalYards'] = plot_df['rushingYards'] + plot_df['netPassingYards']
@@ -48,3 +50,39 @@ df_plot = df_plot.set_index("game_number")
 
 st.header(f"BYU: {mode}")
 st.line_chart(df_plot)
+
+st.markdown("## Matplotlib version of the chart")
+fig, ax = plt.subplots(figsize=(10, 4))
+# x values are the index (game numbers)
+x = df_plot.index
+
+# Plot Rush and Pass (and Total if present)
+ax.plot(x, df_plot['Rush'], label='Rush')
+ax.plot(x, df_plot['Pass'], label='Pass')
+if 'Total' in df_plot.columns:
+    ax.plot(x, df_plot['Total'], label='Total')
+
+ax.set_xlabel('Game number')
+ax.set_ylabel('Yards' if mode == 'Total yards' else 'Yards per attempt')
+ax.set_title(f'BYU: {mode} (Matplotlib)')
+ax.grid(alpha=0.3)
+ax.legend()
+st.pyplot(fig)
+
+tab1, tab2 = st.tabs(["Rush Statistics", "Pass Statistics"])
+
+with tab1:
+    st.markdown("### Rush Statistics")
+    st.write(plot_df[["rushingAttempts", "rushingYards", "yardsPerRushAttempt"]].describe())
+
+with tab2:
+    col1, col2 = st.columns(2)
+
+    with col1:
+        col_df = df.copy()
+        col_df = col_df[['thirdDownEff', 'fourthDownEff']]
+        st.bar_chart(col_df, stack=False, height=300)
+
+    with col2:
+        st.markdown("### Pass Statistics")
+        st.write(plot_df[["netPassingYards", "yardsPerPass"]].describe())
